@@ -3,23 +3,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum PP_STATE_ {
-	PP_STATE_NORMAL,
-	PP_STATE_LINE_COMMENT,
-	PP_STATE_WHITE_SPACE,
-};
 
-struct pp {
-	FILE *in;
-	FILE *out;
-	enum PP_STATE_ state;
-};
+
+static inline void
+s_set_diag_msg(struct as_diag *diag, const char msg[])
+{
+	assert(strlen(msg) <= AS_MAX_DIAG_MSG_LEN);
+
+	as_set_diag(diag, diag->line, diag->column, msg);
+}
 
 static PP_Result
 s_run_line(struct pp *pp, const char rd_line[], size_t rd_line_len)
 {
-	assert(pp);
-	assert(rd_line);
+	assert(pp && rd_line);
 	assert(rd_line_len && rd_line_len <= PP_MAX_LINE_LEN);
 
 	char wr_line[PP_MAX_LINE_LEN + 1];
@@ -95,25 +92,18 @@ s_run_line(struct pp *pp, const char rd_line[], size_t rd_line_len)
 					      : PP_RESULT_OK;
 }
 
-PP_Result
-pp_init(struct pp **pp, FILE *in, FILE *out)
+void
+pp_init(OUT_ struct pp *pp, INOUT_ FILE *in, INOUT_ FILE *out, struct as_diag diag)
 {
-	if (!pp || !in || !out)
-		return PP_RESULT_ERR(PP_ERR_INVAL_PARAM);
+	assert(pp && in && out);
 
-	*pp = (struct pp *)malloc(sizeof(struct pp));
-	if (!*pp)
-		return PP_RESULT_ERR(PP_ERR_OOM);
-
-	(*pp)->in = in;
-	(*pp)->out = out;
-	(*pp)->state = PP_STATE_NORMAL;
-
-	return PP_RESULT_OK;
+	pp->in = in;
+	pp->out = out;
+	pp->state = PP_STATE_NORMAL;
 }
 
 PP_Result
-pp_run(INOUT_ struct pp *pp)
+pp_run(struct pp *pp)
 {
 	char line[PP_MAX_LINE_LEN + 1] = {
 		0,
@@ -128,15 +118,8 @@ pp_run(INOUT_ struct pp *pp)
 		if (line[line_len - 1] != '\n')
 			return PP_RESULT_ERR(PP_ERR_INVAL_LINE_LEN);
 
-		const PP_Result result = s_run_line(pp, line, line_len);
-		PP_RET_IF_ERR(result);
+		PP_RET_IF_ERR(s_run_line(pp, line, line_len));
 	}
 
 	return feof(pp->in) ? PP_RESULT_OK : PP_RESULT_ERR(PP_ERR_INTERNAL);
-}
-
-void
-pp_deinit(struct pp *pp)
-{
-	free(pp);
 }

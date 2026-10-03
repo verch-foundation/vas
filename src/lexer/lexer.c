@@ -20,6 +20,8 @@ enum LEXER_STATE_ {
 static inline void
 s_set_diag_msg(struct as_diag *diag, const char msg[])
 {
+	assert(strlen(msg) <= AS_MAX_DIAG_MSG_LEN);
+
 	as_set_diag(diag, diag->line, diag->column, msg);
 }
 

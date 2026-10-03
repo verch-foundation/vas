@@ -12,12 +12,11 @@ typedef struct pp_result {
 #define PP_RESULT_ERR(err_) (PP_Result){.is_ok = false, .err = err_}
 #define PP_RESULT_OK (PP_Result){.is_ok = true, .err = 0}
 
-
-#define PP_RET_IF_ERR(result_) 		\
-	do {				\
-		if (!result.is_ok)	\
-			return result;	\
+#define PP_RET_IF_ERR(result_)                                              \
+	do {                                                                   \
+		PP_Result result__ = (result_);                             \
+		if (!result__.is_ok)                                           \
+			return (result__);                                     \
 	} while (0)
-
 
 #endif
